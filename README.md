@@ -1,1 +1,1 @@
-# Server Side Hello World!
+# Server side code for CSCE242 project!
