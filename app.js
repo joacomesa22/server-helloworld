@@ -1,70 +1,67 @@
 const express = require("express");
 const cors = require("cors");
 const app = express();
+const Joi = require("joi");
 app.use(cors());
 app.use(express.static("public"));
+const multer = require("multer");
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "./public/images/");
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  },
+});
+
+const upload = multer({ storage: storage });
 
 const news = [
   {
-    id: 1,
     title: "Lionel Messi's luxurious house in Barcelona",
-    hours: "8",
     img: "mansion.jpg",
     link: "https://www.youtube.com/watch?app=desktop&v=ncxD-WXorrA",
     category: ["Lifestyle", "Family", "Barcelona"],
   },
   {
-    id: 2,
     title: "The day Messi scored with just one boot ",
-    hours: "10",
     img: "farsa.jpg",
     link: "https://www.givemesport.com/88097980-lionel-messis-epic-barcelona-assist-with-just-one-boot-vs-real-madrid-and-ronaldo/",
     category: ["Stories", "Football", "Barcelona"],
   },
   {
-    id: 3,
     title: "Did you know Messi was sent off in his debut?",
-    hours: "12",
     img: "roja.jpg",
     link: "https://www.tycsports.com/seleccion-argentina/debut-de-lionel-messi-en-la-seleccion-argentina-ante-hungria-id529348.html",
     category: ["Fun Facts", "Argentina", "Football"],
   },
   {
-    id: 4,
     title: "Lionel's tribute to Diego Armando Maradona ",
-    hours: "12",
     img: "diego.jpeg",
     link: "https://www.theguardian.com/football/blog/2020/nov/30/lionel-messi-newells-old-boys-shirt-maradona-barcelona",
     category: ["Stories", "Football", "Barcelona", "Argentina"],
   },
   {
-    id: 5,
     title: "Argentina's Lionel Messi blames soaked pitch",
-    hours: "14",
     img: "soaked.jpg",
     link: "https://www.espn.com/soccer/story/_/id/41724998/argentina-lionel-messi-soaked-pitch-venezuela-draw",
     category: ["Argentina", "WC Qualifiers", "Recent"],
   },
   {
-    id: 6,
     title: "The 10 players who can wear Messi's new boots",
-    hours: "15",
     img: "boots.jpg",
     link: "https://www.sportbible.com/football/mls/lionel-messi-inter-miami-adidas-lamine-yamal-278908-20241011",
     category: ["Lifestyle", "Merch", "MLS"],
   },
   {
-    id: 7,
     title: "Lionel Messi is nominated for MLS' MVP award",
-    hours: "18",
     img: "inter.jpg",
     link: "https://www.dailymail.co.uk/sport/football/article-13942757/lionel-messi-mls-mvp-award-inter-miami.html",
     category: ["MLS", "Awards", "Recent"],
   },
   {
-    id: 8,
     title: "Huge fan risking it all to meet Lio",
-    hours: "20",
     img: "invader.jpg",
     link: "https://www.miamiherald.com/sports/mls/inter-miami/article293671764.html",
     category: ["Stories", "Fun Fact", "MLS"],
@@ -79,6 +76,40 @@ app.get("/api/news", (req, res) => {
   res.json(news);
 });
 
-app.listen(3001, () => {
-  console.log("Listening...");
+app.post("/api/news", upload.single("img"), (req, res) => {
+  console.log("POST request received");
+  console.log(req.body);
+  const result = validateNews(req.body);
+  if (result.error) {
+    res.status(400).send(result.error.details[0].message);
+    console.log("I HAVE AN ERROR!!!");
+    return;
+  }
+
+  const article = {
+    title: req.body.title,
+    link: req.body.link,
+    category: req.body.category,
+  };
+
+  if (req.file) {
+    article.img = req.file.filename;
+  }
+
+  news.push(article);
+  res.status(200).send(article);
 });
+
+const validateNews = (news) => {
+  const schema = Joi.object({
+    title: Joi.string().min(5).required(),
+    link: Joi.string().required(),
+    category: Joi.array(),
+  });
+
+  return schema.validate(news);
+};
+
+// app.listen(3002, () => {
+//   console.log("Listening...");
+// });
