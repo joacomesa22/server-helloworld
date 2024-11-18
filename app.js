@@ -110,6 +110,6 @@ const validateNews = (news) => {
   return schema.validate(news);
 };
 
-// app.listen(3002, () => {
-//   console.log("Listening...");
-// });
+app.listen(3002, () => {
+  console.log("Listening...");
+});
