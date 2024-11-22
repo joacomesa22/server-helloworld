@@ -19,52 +19,60 @@ const upload = multer({ storage: storage });
 
 const news = [
   {
+    _id: 1,
     title: "Lionel Messi's luxurious house in Barcelona",
     img: "mansion.jpg",
     link: "https://www.youtube.com/watch?app=desktop&v=ncxD-WXorrA",
-    category: ["Lifestyle", "Family", "Barcelona"],
+    category: ["Lifestyle", "Barcelona"],
   },
   {
+    _id: 2,
     title: "The day Messi scored with just one boot ",
     img: "farsa.jpg",
     link: "https://www.givemesport.com/88097980-lionel-messis-epic-barcelona-assist-with-just-one-boot-vs-real-madrid-and-ronaldo/",
     category: ["Stories", "Football", "Barcelona"],
   },
   {
+    _id: 3,
     title: "Did you know Messi was sent off in his debut?",
     img: "roja.jpg",
     link: "https://www.tycsports.com/seleccion-argentina/debut-de-lionel-messi-en-la-seleccion-argentina-ante-hungria-id529348.html",
     category: ["Fun Facts", "Argentina", "Football"],
   },
   {
+    _id: 4,
     title: "Lionel's tribute to Diego Armando Maradona ",
     img: "diego.jpeg",
     link: "https://www.theguardian.com/football/blog/2020/nov/30/lionel-messi-newells-old-boys-shirt-maradona-barcelona",
     category: ["Stories", "Football", "Barcelona", "Argentina"],
   },
   {
+    _id: 5,
     title: "Argentina's Lionel Messi blames soaked pitch",
     img: "soaked.jpg",
     link: "https://www.espn.com/soccer/story/_/id/41724998/argentina-lionel-messi-soaked-pitch-venezuela-draw",
-    category: ["Argentina", "WC Qualifiers", "Recent"],
+    category: ["Argentina", "Football", "Stories"],
   },
   {
+    _id: 6,
     title: "The 10 players who can wear Messi's new boots",
     img: "boots.jpg",
     link: "https://www.sportbible.com/football/mls/lionel-messi-inter-miami-adidas-lamine-yamal-278908-20241011",
-    category: ["Lifestyle", "Merch", "MLS"],
+    category: ["Lifestyle", "Fun Facts", "MLS"],
   },
   {
+    _id: 7,
     title: "Lionel Messi is nominated for MLS' MVP award",
     img: "inter.jpg",
     link: "https://www.dailymail.co.uk/sport/football/article-13942757/lionel-messi-mls-mvp-award-inter-miami.html",
-    category: ["MLS", "Awards", "Recent"],
+    category: ["MLS", "Football", "Stories"],
   },
   {
+    _id: 8,
     title: "Huge fan risking it all to meet Lio",
     img: "invader.jpg",
     link: "https://www.miamiherald.com/sports/mls/inter-miami/article293671764.html",
-    category: ["Stories", "Fun Fact", "MLS"],
+    category: ["Stories", "Fun Facts", "MLS"],
   },
 ];
 
@@ -78,7 +86,6 @@ app.get("/api/news", (req, res) => {
 
 app.post("/api/news", upload.single("img"), (req, res) => {
   console.log("POST request received");
-  console.log(req.body);
   const result = validateNews(req.body);
   if (result.error) {
     res.status(400).send(result.error.details[0].message);
@@ -87,6 +94,7 @@ app.post("/api/news", upload.single("img"), (req, res) => {
   }
 
   const article = {
+    _id: news.length + 1,
     title: req.body.title,
     link: req.body.link,
     category: req.body.category,
@@ -100,11 +108,51 @@ app.post("/api/news", upload.single("img"), (req, res) => {
   res.status(200).send(article);
 });
 
+app.put("/api/news/:id", upload.single("img"), (req, res) => {
+  console.log("In edit");
+  console.log(req.body);
+  const article = news.find(
+    (article) => article._id === parseInt(req.params.id)
+  );
+  if (!article) {
+    return res
+      .status(404)
+      .send("The article could not be found, please try again");
+  }
+  const result = validateNews(req.body);
+
+  if (result.error) {
+    res.status(400).send(result.error.details[0].message);
+    return;
+  }
+  article.title = req.body.title;
+  article.link = req.body.link;
+  article.category = req.body.category;
+
+  if (req.file) {
+    article.img = req.file.filename;
+  }
+
+  res.status(200).send(article);
+});
+
+app.delete("/api/news/:id", (req, res) => {
+  const articleToDelete = news.find(
+    (article) => article._id === parseInt(req.params.id)
+  );
+  if (!articleToDelete) {
+    return res.status(404).send("Article not found, please try again");
+  }
+  const index = news.indexOf(articleToDelete);
+  news.splice(index, 1);
+  res.status(200).send(`Article ${articleToDelete} deleted successfully!`);
+});
+
 const validateNews = (news) => {
   const schema = Joi.object({
-    title: Joi.string().min(5).required(),
+    title: Joi.string().min(3).required(),
     link: Joi.string().required(),
-    category: Joi.array(),
+    category: Joi.alternatives().try(Joi.string(), Joi.array()),
   });
 
   return schema.validate(news);
